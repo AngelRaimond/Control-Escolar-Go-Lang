@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Control Escolar</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="/public/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Control Escolar</h1>
+    </header>
+    <main>
+        <section>
+            <h2>Estudiantes</h2>
+            <form id="studentForm">
+                <label>Nombre: <input type="text" id="studentName" required></label>
+                <label>Grupo: <input type="text" id="studentGroup" required></label>
+                <label>Email: <input type="email" id="studentEmail" required></label>
+                <button type="submit">Agregar</button>
+            </form>
+            <table id="studentsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>Nombre</th><th>Grupo</th><th>Email</th><th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+        <section>
+            <h2>Materias</h2>
+            <form id="subjectForm">
+                <label>Nombre: <input type="text" id="subjectName" required></label>
+                <button type="submit">Agregar</button>
+            </form>
+            <table id="subjectsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>Nombre</th><th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+        <section>
+            <h2>Calificaciones</h2>
+            <form id="gradeForm">
+                <label>Estudiante:
+                    <select id="gradeStudentID" required></select>
+                </label>
+                <label>Materia:
+                    <select id="gradeSubjectID" required></select>
+                </label>
+                <label>Calificación: <input type="number" step="0.01" id="gradeValue" required></label>
+                <button type="submit">Agregar</button>
+            </form>
+            <table id="gradesTable">
+                <thead>
+                    <tr>
+                        <th>ID</th><th>Estudiante</th><th>Materia</th><th>Calificación</th><th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2025 "Meg" Raimond. Todos los derechos reservados.</p>
+    </footer>
+    <script>
+        // --- Students ---
+        function loadStudents() {
+            fetch('/api/students')
+                .then(r => r.json())
+                .then(students => {
+                    let tbody = document.querySelector("#studentsTable tbody");
+                    tbody.innerHTML = "";
+                    if (Array.isArray(students)) {
+                        students.forEach(s => {
+                            tbody.innerHTML += `<tr>
+                                <td>${s.student_id}</td>
+                                <td>${s.name}</td>
+                                <td>${s.group}</td>
+                                <td>${s.email}</td>
+                                <td>
+                                    <button onclick="deleteStudent(${s.student_id})">Eliminar</button>
+                                </td>
+                            </tr>`;
+                        });
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5">No se pudieron cargar los estudiantes.</td></tr>';
+                    }
+                })
+                .catch(() => {
+                    let tbody = document.querySelector("#studentsTable tbody");
+                    tbody.innerHTML = '<tr><td colspan="5">Error de conexión.</td></tr>';
+                });
+        }
+        document.getElementById("studentForm").onsubmit = function(e){
+            e.preventDefault();
+            fetch('/api/students', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    name: document.getElementById("studentName").value,
+                    group: document.getElementById("studentGroup").value,
+                    email: document.getElementById("studentEmail").value
+                })
+            }).then(()=>{loadStudents(); this.reset();});
+        };
+        function deleteStudent(id){
+            fetch('/api/students/'+id, {method:'DELETE'}).then(loadStudents);
+        }
+        loadStudents();
+
+        // --- Subjects ---
+        function loadSubjects() {
+            fetch('/api/subjects/')
+                .then(r => r.json())
+                .then(subjects => {
+                    let tbody = document.querySelector("#subjectsTable tbody");
+                    tbody.innerHTML = "";
+                    if (Array.isArray(subjects)) {
+                        subjects.forEach(s => {
+                            tbody.innerHTML += `<tr>
+                                <td>${s.subject_id}</td>
+                                <td>${s.name}</td>
+                                <td>
+                                    <button onclick="deleteSubject(${s.subject_id})">Eliminar</button>
+                                </td>
+                            </tr>`;
+                        });
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="3">No se pudieron cargar las materias.</td></tr>';
+                    }
+                })
+                .catch(() => {
+                    let tbody = document.querySelector("#subjectsTable tbody");
+                    tbody.innerHTML = '<tr><td colspan="3">Error de conexión.</td></tr>';
+                });
+        }
+        document.getElementById("subjectForm").onsubmit = function(e){
+            e.preventDefault();
+            fetch('/api/subjects', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    name: document.getElementById("subjectName").value
+                })
+            }).then(()=>{loadSubjects(); this.reset();});
+        };
+        function deleteSubject(id){
+            fetch('/api/subjects/'+id, {method:'DELETE'}).then(loadSubjects);
+        }
+        // Para obtener todas las materias (agrega endpoint en main.go si lo deseas)
+        fetch('/api/subjects/').then(r=>r.json()).then(subjects=>{
+            let tbody = document.querySelector("#subjectsTable tbody");
+            tbody.innerHTML = "";
+            subjects.forEach(s=>{
+                tbody.innerHTML += `<tr>
+                    <td>${s.subject_id}</td>
+                    <td>${s.name}</td>
+                    <td>
+                        <button onclick="deleteSubject(${s.subject_id})">Eliminar</button>
+                    </td>
+                </tr>`;
+            });
+        });
+
+        // --- Grades ---
+        function loadGrades() {
+            fetch('/api/grades/student/1')
+                .then(r => r.json())
+                .then(grades => {
+                    let tbody = document.querySelector("#gradesTable tbody");
+                    tbody.innerHTML = "";
+                    if (Array.isArray(grades)) {
+                        grades.forEach(g => {
+                            tbody.innerHTML += `<tr>
+                                <td>${g.grade_id}</td>
+                                <td>${g.student_id}</td>
+                                <td>${g.subject_id}</td>
+                                <td>${g.grade}</td>
+                                <td>
+                                    <button onclick="deleteGrade(${g.grade_id})">Eliminar</button>
+                                </td>
+                            </tr>`;
+                        });
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5">No se pudieron cargar las calificaciones.</td></tr>';
+                    }
+                })
+                .catch(() => {
+                    let tbody = document.querySelector("#gradesTable tbody");
+                    tbody.innerHTML = '<tr><td colspan="5">Error de conexión.</td></tr>';
+                });
+        }
+        function loadStudentOptions() {
+            fetch('/api/students').then(r=>r.json()).then(students=>{
+                let select = document.getElementById("gradeStudentID");
+                select.innerHTML = '';
+                if (Array.isArray(students)) {
+                    students.forEach(s => {
+                        select.innerHTML += `<option value="${s.student_id}">${s.name} (${s.group})</option>`;
+                    });
+                }
+            });
+        }
+        function loadSubjectOptions() {
+            fetch('/api/subjects').then(r=>r.json()).then(subjects=>{
+                let select = document.getElementById("gradeSubjectID");
+                select.innerHTML = '';
+                if (Array.isArray(subjects)) {
+                    subjects.forEach(s => {
+                        select.innerHTML += `<option value="${s.subject_id}">${s.name}</option>`;
+                    });
+                }
+            });
+        }
+        // Llama estas funciones al cargar la página
+        loadStudentOptions();
+        loadSubjectOptions();
+        document.getElementById("gradeForm").onsubmit = function(e){
+            e.preventDefault();
+            fetch('/api/grades', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    student_id: parseInt(document.getElementById("gradeStudentID").value),
+                    subject_id: parseInt(document.getElementById("gradeSubjectID").value),
+                    grade: parseFloat(document.getElementById("gradeValue").value)
+                })
+            }).then(()=>{loadGrades(); this.reset(); loadStudentOptions(); loadSubjectOptions();});
+        };
+        function deleteGrade(id){
+            fetch('/api/grades/'+id, {method:'DELETE'}).then(loadGrades);
+        }
+        loadGrades();
+    </script>
+</body>
+</html>
