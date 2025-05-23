@@ -1,0 +1,35 @@
+package main
+
+// Student model
+type Student struct {
+	StudentID int       `gorm:"primaryKey;autoIncrement" json:"student_id"`
+	Name      string    `json:"name"`
+	Group     string    `json:"group"`
+	Email     string    `json:"email"`
+	Subjects  []Subject `gorm:"many2many:student_subjects;" json:"subjects,omitempty"`
+	Grades    []Grade   `gorm:"foreignKey:StudentID" json:"grades,omitempty"`
+}
+
+// Subject model
+type Subject struct {
+	SubjectID int       `gorm:"primaryKey;autoIncrement" json:"subject_id"`
+	Name      string    `json:"name"`
+	Students  []Student `gorm:"many2many:student_subjects;" json:"students,omitempty"`
+	Grades    []Grade   `gorm:"foreignKey:SubjectID" json:"grades,omitempty"`
+}
+
+// Grade model
+type Grade struct {
+	GradeID   int     `gorm:"primaryKey;autoIncrement" json:"grade_id"`
+	StudentID int     `json:"student_id"`
+	Student   Student `gorm:"foreignKey:StudentID" json:"-"`
+	SubjectID int     `json:"subject_id"`
+	Subject   Subject `gorm:"foreignKey:SubjectID" json:"-"`
+	Grade     float64 `json:"grade"`
+}
+
+// StudentSubject model para la relación many-to-many
+type StudentSubject struct {
+	StudentID int `gorm:"primaryKey"`
+	SubjectID int `gorm:"primaryKey"`
+}
